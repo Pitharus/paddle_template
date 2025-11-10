@@ -16,6 +16,8 @@ export const PricingTier: Tier[] = [
     description: 'Ideal for individuals who want to get started with simple design tasks.',
     features: ['1 workspace', 'Limited collaboration', 'Export to PNG and SVG'],
     featured: false,
+    // TODO: Replace these with your actual Paddle price IDs
+    // Create products at: https://sandbox-vendors.paddle.com/products
     priceId: { month: 'pri_01k9q28pk8whfnwtvjqzhz2t25', year: 'pri_01k9pzwwvkw0n3wjsbdr2q2ygt' },
   },
   {
@@ -25,6 +27,7 @@ export const PricingTier: Tier[] = [
     description: 'Enhanced design tools for scaling teams who need more flexibility.',
     features: ['Integrations', 'Unlimited workspaces', 'Advanced editing tools', 'Everything in Starter'],
     featured: true,
+    // TODO: Replace these with your actual Paddle price IDs
     priceId: { month: 'pri_01k9q29xjybx2r9pptec3ht08b', year: 'pri_01k9pzxpzra3ftanxqj6yn9x9s' },
   },
   {
@@ -40,6 +43,7 @@ export const PricingTier: Tier[] = [
       'Everything in Pro',
     ],
     featured: false,
+    // TODO: Replace these with your actual Paddle price IDs
     priceId: { month: 'pri_01k9q2b2c0zpdhshny559g5ss0', year: 'pri_01k9pzybp2vfpf9b63tch670ka' },
   },
 ];

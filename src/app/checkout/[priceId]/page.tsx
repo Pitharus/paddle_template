@@ -4,9 +4,17 @@ import { CheckoutHeader } from '@/components/checkout/checkout-header';
 import { CheckoutContents } from '@/components/checkout/checkout-contents';
 import { createClient } from '@/utils/supabase/server';
 
-export default async function CheckoutPage() {
+interface CheckoutPageProps {
+  params: Promise<{
+    priceId: string;
+  }>;
+}
+
+export default async function CheckoutPage({ params }: CheckoutPageProps) {
+  const { priceId } = await params;
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
+  
   return (
     <div className={'w-full min-h-screen relative overflow-hidden'}>
       <CheckoutGradients />

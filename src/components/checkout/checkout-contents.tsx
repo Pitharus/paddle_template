@@ -22,6 +22,7 @@ export function CheckoutContents({ userEmail }: Props) {
   const [quantity, setQuantity] = useState<number>(1);
   const [paddle, setPaddle] = useState<Paddle | null>(null);
   const [checkoutData, setCheckoutData] = useState<CheckoutEventsData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleCheckoutEvents = (event: CheckoutEventsData) => {
     setCheckoutData(event);
@@ -35,11 +36,41 @@ export function CheckoutContents({ userEmail }: Props) {
   );
 
   useEffect(() => {
-    if (!paddle?.Initialized && process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN && process.env.NEXT_PUBLIC_PADDLE_ENV) {
+    // Debug logging
+    console.log('Checkout initialization:', {
+      hasToken: !!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
+      environment: process.env.NEXT_PUBLIC_PADDLE_ENV,
+      priceId,
+      userEmail,
+      paddleInitialized: paddle?.Initialized,
+    });
+
+    if (!process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN) {
+      setError('Paddle client token is missing. Please configure NEXT_PUBLIC_PADDLE_CLIENT_TOKEN in your .env.local file.');
+      return;
+    }
+
+    if (!process.env.NEXT_PUBLIC_PADDLE_ENV) {
+      setError('Paddle environment is missing. Please configure NEXT_PUBLIC_PADDLE_ENV in your .env.local file.');
+      return;
+    }
+
+    if (!priceId) {
+      setError('Price ID is missing from the URL.');
+      return;
+    }
+
+    if (!paddle?.Initialized) {
+      console.log('Initializing Paddle...');
       initializePaddle({
         token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN,
         environment: process.env.NEXT_PUBLIC_PADDLE_ENV as Environments,
         eventCallback: (event) => {
+          console.log('Paddle event:', event.name, event);
+          if (event.name === 'checkout.error') {
+            console.error('Checkout error event:', event);
+            setError(`Checkout error: ${JSON.stringify(event.data)}`);
+          }
           if (event.data && event.name) {
             handleCheckoutEvents(event.data);
           }
@@ -53,17 +84,31 @@ export function CheckoutContents({ userEmail }: Props) {
             frameTarget: 'paddle-checkout-frame',
             frameInitialHeight: 450,
             frameStyle: 'width: 100%; background-color: transparent; border: none',
-            successUrl: '/checkout/success',
+            successUrl: `${window.location.origin}/checkout/success`,
           },
         },
-      }).then(async (paddle) => {
-        if (paddle && priceId) {
-          setPaddle(paddle);
-          paddle.Checkout.open({
-            ...(userEmail && { customer: { email: userEmail } }),
-            items: [{ priceId: priceId, quantity: 1 }],
-          });
+      }).then(async (paddleInstance) => {
+        if (paddleInstance && priceId) {
+          console.log('Paddle initialized successfully');
+          setPaddle(paddleInstance);
+          try {
+            console.log('Opening checkout with:', {
+              priceId,
+              quantity: 1,
+              userEmail,
+            });
+            paddleInstance.Checkout.open({
+              ...(userEmail && { customer: { email: userEmail } }),
+              items: [{ priceId: priceId, quantity: 1 }],
+            });
+          } catch (error) {
+            console.error('Paddle Checkout.open error:', error);
+            setError(`Failed to open checkout: ${error instanceof Error ? error.message : String(error)}`);
+          }
         }
+      }).catch((error) => {
+        console.error('Paddle initialization error:', error);
+        setError(`Failed to initialize Paddle: ${error instanceof Error ? error.message : String(error)}`);
       });
     }
   }, [paddle?.Initialized, priceId, userEmail]);
@@ -81,6 +126,12 @@ export function CheckoutContents({ userEmail }: Props) {
       }
     >
       <CheckoutFormGradients />
+      {error && (
+        <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <h3 className="text-red-500 font-semibold mb-2">Checkout Error</h3>
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
+      )}
       <div className={'flex flex-col md:flex-row gap-8 md:gap-16'}>
         <div className={'w-full md:w-[400px]'}>
           <PriceSection checkoutData={checkoutData} quantity={quantity} handleQuantityChange={setQuantity} />
